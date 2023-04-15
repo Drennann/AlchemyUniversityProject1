@@ -5,6 +5,19 @@ import { keccak256 } from 'ethereum-cryptography/keccak'
 import { toHex, utf8ToBytes, hexToBytes } from 'ethereum-cryptography/utils'
 import Swal from 'sweetalert2'
 
+// 02f6b6cfa6d4f94d3f05d6ce31d0cedca697c55730909e6074c8d9fdbe25402424
+// 02d05f04eeead5f8bad98236887c7a457bd3f4a29af0659d3c119fb5aaf5e66104
+// 038aaf7c7c57a5e7da15e5c08120db074dbe3cf186cb47abb27c3724989f112d12
+
+const publicKeys = {
+  '0xd0cedca697c55730909e6074c8d9fdbe25402424':
+    '02f6b6cfa6d4f94d3f05d6ce31d0cedca697c55730909e6074c8d9fdbe25402424',
+  '0x7c7a457bd3f4a29af0659d3c119fb5aaf5e66104':
+    '02d05f04eeead5f8bad98236887c7a457bd3f4a29af0659d3c119fb5aaf5e66104',
+  '0x20db074dbe3cf186cb47abb27c3724989f112d12':
+    '038aaf7c7c57a5e7da15e5c08120db074dbe3cf186cb47abb27c3724989f112d12'
+}
+
 function Transfer({ address, setBalance }) {
   const [sendAmount, setSendAmount] = useState('')
   const [recipient, setRecipient] = useState('')
@@ -26,7 +39,7 @@ function Transfer({ address, setBalance }) {
       })
       if (isConfirmed) {
         const message = {
-          sender: address,
+          sender: publicKeys[address],
           amount: parseInt(sendAmount),
           recipient
         }
@@ -34,28 +47,20 @@ function Transfer({ address, setBalance }) {
           keccak256(utf8ToBytes(JSON.stringify(message)))
         )
 
-        console.log('hashedMessage:', hashedMessage)
-
         const signature = secp256k1
-          .sign(hashedMessage, hexToBytes(PrivateKey))
+          .sign(hashedMessage, PrivateKey)
           .toCompactHex()
 
-        /*         console.log('Signature:', signature)
-        console.log('Address:', address.slice(2))
-        console.log('HexPrivate Key', hexToBytes(PrivateKey))
-
-        console.log(
-          'Recovered PublicKey',
-          signature.recoverPublicKey(hashedMessage).toHex()
-        ) */
-
-        const postData = JSON.stringify({ message, signature, hashedMessage })
-
-        console.log(postData)
+        const publicKey = toHex(secp256k1.getPublicKey(PrivateKey))
 
         const {
           data: { balance }
-        } = await server.post('send', { message, signature, hashedMessage })
+        } = await server.post('send', {
+          message,
+          signature,
+          hashedMessage,
+          publicKey
+        })
         setBalance(balance)
       } else {
         Swal.fire({

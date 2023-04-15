@@ -9,6 +9,10 @@ const port = 3042;
 app.use(cors());
 app.use(express.json());
 
+// 02f6b6cfa6d4f94d3f05d6ce31d0cedca697c55730909e6074c8d9fdbe25402424
+// 02d05f04eeead5f8bad98236887c7a457bd3f4a29af0659d3c119fb5aaf5e66104
+// 038aaf7c7c57a5e7da15e5c08120db074dbe3cf186cb47abb27c3724989f112d12
+
 const balances = {
   "0xd0cedca697c55730909e6074c8d9fdbe25402424": 100,
   "0x7c7a457bd3f4a29af0659d3c119fb5aaf5e66104": 50,
@@ -22,29 +26,32 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { message, hashedMessage, signature } = req.body;
+  const { message, hashedMessage, signature, publicKey } = req.body;
   const { recipient, sender, amount } = message;
 
   const hashedMessage1 = toHex(keccak256(utf8ToBytes(JSON.stringify(message))));
 
   const sameMessage = hashedMessage === hashedMessage1;
 
-  if (!sameMessage) return res.send("Invalid Inputs");
+  if (!sameMessage) return res.status(508).send("Invalid Inputs");
 
-  console.log(secp);
-  /* const correctSender = signature.recoverPublicKey(hashedMessage).toHex(); */
+  const sameSender = publicKey === sender;
 
-  /* console.log("correctSender:", correctSender); */
+  if (!sameSender) return res.status(509).send("Incorrect tsx.sender");
+
+  const isSigned = secp256k1.verify(signature, hashedMessage, publicKey);
+
+  if (!isSigned) return res.status(510).send("Invalid sign");
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
 
-  if (balances[sender] < amount) {
-    res.status(400).send({ message: "Not enough funds!" });
+  if (balances["0x" + sender.slice(-40)] < amount) {
+    res.status(405).send({ message: "Not enough funds!" });
   } else {
-    balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
+    balances["0x" + sender.slice(-40)] -= amount;
+    balances["0x" + recipient.slice(-40)] += amount;
+    res.send({ balance: balances["0x" + sender.slice(-40)] });
   }
 });
 
