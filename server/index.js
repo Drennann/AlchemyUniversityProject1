@@ -33,21 +33,22 @@ app.post("/send", (req, res) => {
 
   const sameMessage = hashedMessage === hashedMessage1;
 
-  if (!sameMessage) return res.status(508).send("Invalid Inputs");
+  if (!sameMessage) return res.status(508).json({ msg: "Invalid Inputs" });
 
   const sameSender = publicKey === sender;
 
-  if (!sameSender) return res.status(509).send("Incorrect tsx.sender");
+  if (!sameSender)
+    return res.status(509).json({ msg: "Incorrect tsx.sender || signer" });
 
   const isSigned = secp256k1.verify(signature, hashedMessage, publicKey);
 
-  if (!isSigned) return res.status(510).send("Invalid sign");
+  if (!isSigned) return res.status(510).json({ msg: "Invalid sign" });
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
 
   if (balances["0x" + sender.slice(-40)] < amount) {
-    res.status(405).send({ message: "Not enough funds!" });
+    res.status(405).json({ msg: "Not enough funds!" });
   } else {
     balances["0x" + sender.slice(-40)] -= amount;
     balances["0x" + recipient.slice(-40)] += amount;
