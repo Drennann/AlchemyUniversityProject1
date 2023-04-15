@@ -71,7 +71,6 @@ function Transfer({ address, setBalance }) {
         })
       }
     } catch (ex) {
-      console.log(ex)
       Swal.fire({
         title: 'Error!',
         text: ex?.response?.data?.msg || 'i should not be visible',
